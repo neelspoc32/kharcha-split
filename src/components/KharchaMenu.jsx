@@ -4,10 +4,11 @@ import { useEffect } from "react";
 
 export default function KharchaMenu({
   setTotal,
-  setTagNames,
-  selectedTag,
-  setIsTagListVisible,
+  selectedSuggestion,
+  setIsSuggestionListVisible,
   setFocusedEntryIndex,
+  setOptions,
+  setSuggestionType
 }) {
   const [kharchaEntries, setKharchaEntries] = useState([]);
 
@@ -24,20 +25,19 @@ export default function KharchaMenu({
   }
 
   useEffect(() => {
-    if (
-      kharchaEntries.length > 0 &&
-      selectedTag.entryIndex != null &&
-      kharchaEntries[selectedTag.entryIndex]
-    ) {
-      const oldKharchaEntries = [...kharchaEntries];
-      oldKharchaEntries[selectedTag.entryIndex]["tagName"] =
-        selectedTag.tagName;
-      handleEntryChange(
-        selectedTag["entryIndex"],
-        oldKharchaEntries[selectedTag.entryIndex]
-      );
-    }
-  }, [selectedTag]);
+    if (!selectedSuggestion || selectedSuggestion.entryIndex == null) return;
+
+    const { type, entryIndex, value } = selectedSuggestion;
+    setKharchaEntries((prev) => {
+      if (!prev[entryIndex]) return prev;
+      const updated = [...prev];
+      if (type === "tag")
+        updated[entryIndex] = { ...updated[entryIndex], tagName: value };
+      if (type === "payer")
+        updated[entryIndex] = { ...updated[entryIndex], payer: value };
+      return updated;
+    });
+  }, [selectedSuggestion]);
 
   function isValidTagName(tag) {
     const trimmed = tag.trim();
@@ -76,13 +76,61 @@ export default function KharchaMenu({
   //   }
   //   }
 
-  function handleTagNameSanitize(index) {
-    setTimeout(() => setIsTagListVisible(false), 150);
-    const entry = kharchaEntries[index];
-    if (entry.tagName.trim() && entry.tagName == "#") {
-      const normalizedEntry = { ...entry, tagName: "" };
-      handleEntryChange(index, normalizedEntry);
+  function handleTagNameSanitize(index,e,field) {
+      const related = e.relatedTarget; // where focus is going
+  if (!related || !related.closest(".suggestion-group")) {
+    setTimeout(() => setIsSuggestionListVisible(false), 150);
+  }
+
+  const entry = kharchaEntries[index];
+  let normalizedEntry = { ...entry };
+
+  switch (field) {
+    case "tagName": {
+      let tag = entry.tagName.trim();
+      if (tag === "#") tag = "";
+      if (tag && !tag.startsWith("#")) tag = "#" + tag;
+      if (tag.length > 1) {
+        // capitalize first letter after #
+        tag = "#" + tag[1].toUpperCase() + tag.slice(2);
+      }
+      normalizedEntry.tagName = tag;
+      break;
     }
+
+    case "kharchaName": {
+      let name = entry.kharchaName.trim();
+      if (name) {
+        name = name.charAt(0).toUpperCase() + name.slice(1);
+      }
+      normalizedEntry.kharchaName = name;
+      break;
+    }
+
+    case "payer": {
+      let payer = entry.payer.trim();
+      if (payer) {
+        payer = payer.charAt(0).toUpperCase() + payer.slice(1);
+      }
+      normalizedEntry.payer = payer;
+      break;
+    }
+
+    case "amount": {
+      let amt = Number(entry.amount);
+      if (isNaN(amt) || amt < 0) amt = 0;
+      normalizedEntry.amount = amt;
+      break;
+    }
+
+    default:
+      break;
+  }
+
+  // Only update if something actually changed
+  if (JSON.stringify(normalizedEntry) !== JSON.stringify(entry)) {
+    handleEntryChange(index, normalizedEntry);
+  }
   }
 
   return (
@@ -101,7 +149,7 @@ export default function KharchaMenu({
           ) : (
             <div
               id="entries"
-              className="grid grid-cols-2 max-sm:grid-cols-4 md:grid-cols-4 gap-4"
+              className="grid grid-cols-2 max-sm:grid-cols-2 md:grid-cols-4 gap-4"
             >
               {kharchaEntries.map((entry, index) => (
                 <KharchaEntry
@@ -112,8 +160,9 @@ export default function KharchaMenu({
                   tabNewEntry={handleAddNewEntry}
                   //   handleTagNameNormalize={handleTagNameNormalize}
                   handleTagNameSanitize={handleTagNameSanitize}
-                  setIsTagListVisible={setIsTagListVisible}
+                  setIsSuggestionListVisible={setIsSuggestionListVisible}
                   setFocusedEntryIndex={setFocusedEntryIndex}
+                  setSuggestionType={setSuggestionType}
                 />
               ))}
             </div>
