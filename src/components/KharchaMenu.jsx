@@ -8,7 +8,7 @@ export default function KharchaMenu({
   setIsSuggestionListVisible,
   setFocusedEntryIndex,
   setOptions,
-  setSuggestionType
+  setSuggestionType,
 }) {
   const [kharchaEntries, setKharchaEntries] = useState([]);
 
@@ -76,61 +76,64 @@ export default function KharchaMenu({
   //   }
   //   }
 
-  function handleTagNameSanitize(index,e,field) {
-      const related = e.relatedTarget; // where focus is going
-  if (!related || !related.closest(".suggestion-group")) {
-    setTimeout(() => setIsSuggestionListVisible(false), 150);
-  }
+  function handleTagNameSanitize(index, e, field) {
+    const related = e.relatedTarget; // where focus is going
+    if (!related || !related.closest(".suggestion-group")) {
+      setTimeout(() => setIsSuggestionListVisible(false), 150);
+    }
 
-  const entry = kharchaEntries[index];
-  let normalizedEntry = { ...entry };
+    const entry = kharchaEntries[index];
+    let normalizedEntry = { ...entry };
 
-  switch (field) {
-    case "tagName": {
-      let tag = entry.tagName.trim();
-      if (tag === "#") tag = "";
-      if (tag && !tag.startsWith("#")) tag = "#" + tag;
-      if (tag.length > 1) {
-        // capitalize first letter after #
-        tag = "#" + tag[1].toUpperCase() + tag.slice(2);
+    switch (field) {
+      case "tagName": {
+        let tag = entry.tagName.trim();
+        if (tag === "#") tag = "";
+        if (tag && !tag.startsWith("#")) tag = "#" + tag;
+        if (tag.length > 1) {
+          // capitalize first letter after #
+          tag = "#" + tag[1].toUpperCase() + tag.slice(2);
+        }
+        normalizedEntry.tagName = tag;
+        break;
       }
-      normalizedEntry.tagName = tag;
-      break;
-    }
 
-    case "kharchaName": {
-      let name = entry.kharchaName.trim();
-      if (name) {
-        name = name.charAt(0).toUpperCase() + name.slice(1);
+      case "kharchaName": {
+        let name = entry.kharchaName.trim();
+        if (name) {
+          name = name.charAt(0).toUpperCase() + name.slice(1);
+        }
+        normalizedEntry.kharchaName = name;
+        break;
       }
-      normalizedEntry.kharchaName = name;
-      break;
-    }
 
-    case "payer": {
-      let payer = entry.payer.trim();
-      if (payer) {
-        payer = payer.charAt(0).toUpperCase() + payer.slice(1);
+      case "payer": {
+        let payer = entry.payer.trim();
+        if (payer) {
+          payer = payer.charAt(0).toUpperCase() + payer.slice(1);
+        }
+        normalizedEntry.payer = payer;
+        break;
       }
-      normalizedEntry.payer = payer;
-      break;
+
+      case "amount": {
+        let amt = Number(entry.amount);
+        if (isNaN(amt) || amt < 0) amt = 0;
+        // Round to integer (₹ doesn’t usually have decimals in casual kharcha tracking)
+        amt = Math.round(amt);
+
+        normalizedEntry.amount = amt;
+        break;
+      }
+
+      default:
+        break;
     }
 
-    case "amount": {
-      let amt = Number(entry.amount);
-      if (isNaN(amt) || amt < 0) amt = 0;
-      normalizedEntry.amount = amt;
-      break;
+    // Only update if something actually changed
+    if (JSON.stringify(normalizedEntry) !== JSON.stringify(entry)) {
+      handleEntryChange(index, normalizedEntry);
     }
-
-    default:
-      break;
-  }
-
-  // Only update if something actually changed
-  if (JSON.stringify(normalizedEntry) !== JSON.stringify(entry)) {
-    handleEntryChange(index, normalizedEntry);
-  }
   }
 
   return (

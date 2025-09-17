@@ -47,7 +47,7 @@ export default function KharchaEntry({
             setFocusedEntryIndex(index);
           }}
           onClick={(e) => e.stopPropagation()}
-          onBlur={(e) => handleTagNameSanitize(index,e, "tagName")}
+          onBlur={(e) => handleTagNameSanitize(index, e, "tagName")}
           placeholder="Tag Name"
           autoComplete="off"
           required
@@ -62,7 +62,7 @@ export default function KharchaEntry({
           value={entry.kharchaName}
           onClick={(e) => e.stopPropagation()}
           onChange={onChange}
-          onBlur={(e) => handleTagNameSanitize(index,e, "kharchaName")}
+          onBlur={(e) => handleTagNameSanitize(index, e, "kharchaName")}
           placeholder="Kharcha Name"
           autoComplete="off"
           required
@@ -81,7 +81,7 @@ export default function KharchaEntry({
             setIsSuggestionListVisible(true);
             setFocusedEntryIndex(index);
           }}
-          onBlur={(e) => handleTagNameSanitize(index,e, "payer")}
+          onBlur={(e) => handleTagNameSanitize(index, e, "payer")}
           onChange={onChange}
           placeholder="Paid By"
           autoComplete="off"
@@ -97,12 +97,17 @@ export default function KharchaEntry({
           value={entry.amount}
           onClick={(e) => e.stopPropagation()}
           onChange={onChange}
-          onBlur={(e) => handleTagNameSanitize(index,e, "amount")}
+          onBlur={(e) => handleTagNameSanitize(index, e, "amount")}
           onKeyDown={handleTabKey}
           placeholder="Amt"
           autoComplete="off"
           required
         ></input>
+        {entry.amount > 0 && (
+          <span className="text-sm text-gray-500 ml-2">
+            ₹{entry.amount.toLocaleString("en-IN")}
+          </span>
+        )}
       </div>
     </>
   );
