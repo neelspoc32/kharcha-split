@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useEffect } from "react";
 
 export default function KharchaMenu({
+  sectionMode,
   setTotal,
   selectedSuggestion,
   setIsSuggestionListVisible,
@@ -11,7 +12,8 @@ export default function KharchaMenu({
   setSuggestionType,
 }) {
   const [kharchaEntries, setKharchaEntries] = useState([]);
-
+  const [showAddHint, setShowAddHint] = useState(false);
+  
   function handleEntryChange(index, updatedEntry) {
     const updatedEntries = [...kharchaEntries];
     updatedEntries[index] = updatedEntry;
@@ -38,6 +40,39 @@ export default function KharchaMenu({
       return updated;
     });
   }, [selectedSuggestion]);
+
+  //   useEffect(() => {
+  //     // Update options for suggestions
+  //     const tagsSet = new Set();
+  //     const payersSet = new Set();
+  //     kharchaEntries.forEach((entry) => {
+  //       if (entry.tagName && entry.tagName.length > 1) {
+  //         tagsSet.add(entry.tagName);
+  //       }
+  //       if (entry.payer && entry.payer.length > 0) {
+  //         payersSet.add(entry.payer);
+  //       }
+  //     });
+  // setOptions((preOptions) => {
+  //   return {
+  //     tags: [...preOptions.tags, ...Array.from(tagsSet).sort()],
+  //     payers: [...preOptions.payers, ...Array.from(payersSet).sort()],
+  //   }
+  // });
+  //   }, [kharchaEntries, setOptions]);
+
+  useEffect(() => {
+    const allFilled =
+      kharchaEntries.length > 0 &&
+      kharchaEntries.every(
+        (entry) =>
+          isValidTagName(entry.tagName) &&
+          entry.kharchaName.trim() &&
+          entry.payer.trim() &&
+          entry.amount > 0
+      );
+    setShowAddHint(allFilled);
+  }, [kharchaEntries]);
 
   function isValidTagName(tag) {
     const trimmed = tag.trim();
@@ -141,7 +176,7 @@ export default function KharchaMenu({
       <div className="">
         <div
           id="container"
-          className="bg-gray-100 border-b border-gray-400 mt-3 mb-3 overflow-auto min-h-screen px-2"
+          className="bg-gray-100 border-b border-gray-400 mt-3 mb-3 overflow-auto min-h-screen px-2 pb-10"
           onClick={handleAddNewEntry}
         >
           {kharchaEntries.length === 0 ? (
@@ -150,28 +185,42 @@ export default function KharchaMenu({
               <span>Please click here to add new Kharcha</span>
             </div>
           ) : (
-            <div
-              id="entries"
-              className="grid grid-cols-2 max-sm:grid-cols-2 md:grid-cols-4 gap-4"
-            >
-              {kharchaEntries.map((entry, index) => (
-                <KharchaEntry
-                  key={index}
-                  index={index}
-                  entry={entry}
-                  handleEntryChange={handleEntryChange}
-                  tabNewEntry={handleAddNewEntry}
-                  //   handleTagNameNormalize={handleTagNameNormalize}
-                  handleTagNameSanitize={handleTagNameSanitize}
-                  setIsSuggestionListVisible={setIsSuggestionListVisible}
-                  setFocusedEntryIndex={setFocusedEntryIndex}
-                  setSuggestionType={setSuggestionType}
-                />
-              ))}
+            <div>
+              <div
+                id="entries"
+                className="grid grid-cols-2 max-sm:grid-cols-2 md:grid-cols-4 gap-4"
+              >
+                {kharchaEntries.map((entry, index) => (
+                  <KharchaEntry
+                    key={index}
+                    index={index}
+                    entry={entry}
+                    handleEntryChange={handleEntryChange}
+                    tabNewEntry={handleAddNewEntry}
+                    sectionMode = {sectionMode}
+                    //   handleTagNameNormalize={handleTagNameNormalize}
+                    handleTagNameSanitize={handleTagNameSanitize}
+                    setIsSuggestionListVisible={setIsSuggestionListVisible}
+                    setFocusedEntryIndex={setFocusedEntryIndex}
+                    setSuggestionType={setSuggestionType}
+                  />
+                ))}
+              </div>
+              {showAddHint && (
+                <div className="AddNewEntryHint p-8 text-gray-600 flex items-center justify-center space-x-2">
+                  <span className="plus-sign text-3xl text-red-500 font-bold pb-1">
+                    +
+                  </span>
+                  <span>Click to add new entry</span>
+                </div>
+              )}
             </div>
           )}
         </div>
+
+        <div className="text-sm text-gray-500 italic pb-10 px-2">
+          * Click anywhere in the gray area to add a new entry
+        </div>
       </div>
-    </>
-  );
-}
+    </>)
+};
