@@ -4,6 +4,7 @@ import { useEffect } from "react";
 
 export default function KharchaMenu({
   sectionMode,
+  setSectionMode,
   setTotal,
   selectedSuggestion,
   setIsSuggestionListVisible,
@@ -13,7 +14,7 @@ export default function KharchaMenu({
 }) {
   const [kharchaEntries, setKharchaEntries] = useState([]);
   const [showAddHint, setShowAddHint] = useState(false);
-  
+
   function handleEntryChange(index, updatedEntry) {
     const updatedEntries = [...kharchaEntries];
     updatedEntries[index] = updatedEntry;
@@ -85,6 +86,7 @@ export default function KharchaMenu({
       setKharchaEntries([
         { tagName: "", kharchaName: "", payer: "", amount: 0 },
       ]);
+      setSectionMode("left");
     } else {
       const latestEntry = kharchaEntries[kharchaEntries.length - 1];
 
@@ -197,7 +199,7 @@ export default function KharchaMenu({
                     entry={entry}
                     handleEntryChange={handleEntryChange}
                     tabNewEntry={handleAddNewEntry}
-                    sectionMode = {sectionMode}
+                    sectionMode={sectionMode}
                     //   handleTagNameNormalize={handleTagNameNormalize}
                     handleTagNameSanitize={handleTagNameSanitize}
                     setIsSuggestionListVisible={setIsSuggestionListVisible}
@@ -222,5 +224,6 @@ export default function KharchaMenu({
           * Click anywhere in the gray area to add a new entry
         </div>
       </div>
-    </>)
-};
+    </>
+  );
+}
