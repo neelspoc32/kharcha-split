@@ -88,10 +88,12 @@ export default function KharchaEntries({
   //   }
   //   }
 
+  const SUGGESTION_LIST_HIDE_DELAY_MS = 150;
+
   function handleTagNameSanitize(index, e, field) {
     const related = e.relatedTarget; // where focus is going
     if (!related || !related.closest(".suggestion-group")) {
-      setTimeout(() => setIsSuggestionListVisible(false), 150);
+      setTimeout(() => setIsSuggestionListVisible(false), SUGGESTION_LIST_HIDE_DELAY_MS);
     }
 
     const entry = kharchaEntries[index];
@@ -149,7 +151,7 @@ export default function KharchaEntries({
   }
     // When a suggestion is selected, update the relevant entry
     useEffect(() => {
-    if (!selectedSuggestion || selectedSuggestion.entryIndex == null) return;
+    if (!selectedSuggestion || selectedSuggestion.entryIndex === null) return;
 
     const { type, entryIndex, value } = selectedSuggestion;
     setKharchaEntries((prev) => {
