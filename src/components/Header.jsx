@@ -3,13 +3,21 @@ import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import ViewModuleIcon from "@mui/icons-material/ViewModule";
 import ViewListIcon from "@mui/icons-material/ViewList";
-
+import Button from "@mui/material/Button";
+import BackIcon from "@mui/icons-material/ArrowBack";
+import { useNavigate } from "react-router-dom";
 function Header({ sectionMode, setSectionMode }) {
   const handleSwitchChange = (event, newSectionMode) => {
     if (newSectionMode !== null) {
       setSectionMode(newSectionMode);
     }
   };
+   const navigate = useNavigate();
+  function sendBack() {
+    navigate(-1);
+    //window.history.back();
+  }
+
   return (
     <>
       <div className="flex items-center pb-1">
@@ -24,8 +32,8 @@ function Header({ sectionMode, setSectionMode }) {
         </header>
       </div>
       {/* 
-        <div className='pl-2 pr-2 flex justify-between'><img src={kharchaLogo} className="object-cover h-10 w-15 pb-4" alt="my logo" /><span className="header text-3xl text-center font-kvittype text-red-500">KHARCHA PAANI</span></div>
-        {/* <span className="hr"></span> */}
+        
+         */}
       <hr className="pt-1.5 decoration-gray-500 font-bold" />
       <hr className="pt-1.5 decoration-gray-500 font-bold " />
       <hr className="pt-1.5 decoration-gray-500 font-bold" />
@@ -35,7 +43,8 @@ function Header({ sectionMode, setSectionMode }) {
           Split your kharcha among friends!
         </p>
       </div>
-      <span className="flex justify-end pr-2">
+      <span className="flex justify-between pr-2">
+        <Button color="error" startIcon={<BackIcon />} onClick={sendBack}>Back</Button>
         {sectionMode && (
           <ToggleButtonGroup
             value={sectionMode}

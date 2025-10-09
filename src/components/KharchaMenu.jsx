@@ -1,229 +1,277 @@
-import KharchaEntry from "./KharchaEntry";
+import { Box, Button } from "@mui/material";
+import TextField from "@mui/material/TextField";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import kharchaLogo from "../assets/kharcha_split_logo.svg";
+import Typography from "@mui/material/Typography";
+import Divider from "@mui/material/Divider";
+import Container from "@mui/material/Container";
+import Alert from "@mui/material/Alert";
+import CheckIcon from "@mui/icons-material/check";
+import dayjs from "dayjs";
 import { useState } from "react";
-import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
-export default function KharchaMenu({
-  sectionMode,
-  setSectionMode,
-  setTotal,
-  selectedSuggestion,
-  setIsSuggestionListVisible,
-  setFocusedEntryIndex,
-  setOptions,
-  setSuggestionType,
-}) {
-  const [kharchaEntries, setKharchaEntries] = useState([]);
-  const [showAddHint, setShowAddHint] = useState(false);
-
-  function handleEntryChange(index, updatedEntry) {
-    const updatedEntries = [...kharchaEntries];
-    updatedEntries[index] = updatedEntry;
-
-    setKharchaEntries(updatedEntries);
-    const sum = updatedEntries.reduce(
-      (acc, curr) => acc + (Number(curr.amount) || 0),
-      0
-    );
-    setTotal(sum);
+export default function KharchaMenu() {
+  const [participants, setParticipants] = useState([""]);
+  const [eventName, setEventName] = useState("");
+  const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [touched, setTouched] = useState(new Set());
+  const [errorMessage, setErrorMessage] = useState("");
+  const navigate = useNavigate();
+  function handleAddParticipant() {
+    setParticipants((oldParticipants) => [...oldParticipants, ""]);
+    // Logic to add more participant fields
+    console.log("Add Participant button clicked");
   }
 
-  useEffect(() => {
-    if (!selectedSuggestion || selectedSuggestion.entryIndex == null) return;
-
-    const { type, entryIndex, value } = selectedSuggestion;
-    setKharchaEntries((prev) => {
-      if (!prev[entryIndex]) return prev;
-      const updated = [...prev];
-      if (type === "tag")
-        updated[entryIndex] = { ...updated[entryIndex], tagName: value };
-      if (type === "payer")
-        updated[entryIndex] = { ...updated[entryIndex], payer: value };
-      return updated;
-    });
-  }, [selectedSuggestion]);
-
-  //   useEffect(() => {
-  //     // Update options for suggestions
-  //     const tagsSet = new Set();
-  //     const payersSet = new Set();
-  //     kharchaEntries.forEach((entry) => {
-  //       if (entry.tagName && entry.tagName.length > 1) {
-  //         tagsSet.add(entry.tagName);
-  //       }
-  //       if (entry.payer && entry.payer.length > 0) {
-  //         payersSet.add(entry.payer);
-  //       }
-  //     });
-  // setOptions((preOptions) => {
-  //   return {
-  //     tags: [...preOptions.tags, ...Array.from(tagsSet).sort()],
-  //     payers: [...preOptions.payers, ...Array.from(payersSet).sort()],
-  //   }
-  // });
-  //   }, [kharchaEntries, setOptions]);
-
-  useEffect(() => {
-    const allFilled =
-      kharchaEntries.length > 0 &&
-      kharchaEntries.every(
-        (entry) =>
-          isValidTagName(entry.tagName) &&
-          entry.kharchaName.trim() &&
-          entry.payer.trim() &&
-          entry.amount > 0
-      );
-    setShowAddHint(allFilled);
-  }, [kharchaEntries]);
-
-  function isValidTagName(tag) {
-    const trimmed = tag.trim();
-    return trimmed.length > 1 && trimmed.startsWith("#");
+  function handleEventName(event) {
+    setEventName(() => event.target.value);
   }
 
-  function handleAddNewEntry() {
-    if (kharchaEntries.length === 0) {
-      // First entry
-      setKharchaEntries([
-        { tagName: "", kharchaName: "", payer: "", amount: 0 },
-      ]);
-      setSectionMode("left");
+  function handleSubmit(event) {
+    event.preventDefault();
+
+    // Mark all fields as touched on submit
+    setTouched(new Set(participants.map((_, i) => i)));
+
+    // Check if any participant is empty
+    if (participants.some((p) => p.trim() === "")) {
+      setErrorMessage("Please fill in all participant names.");
+      console.warn("Please fill in all participant names.");
+      return; // Stop submission
     } else {
-      const latestEntry = kharchaEntries[kharchaEntries.length - 1];
-
-      // Add new entry only if the last one is fully filled
-      if (
-        isValidTagName(latestEntry.tagName) &&
-        latestEntry.kharchaName.trim() &&
-        latestEntry.payer.trim() &&
-        latestEntry.amount > 0
-      ) {
-        setKharchaEntries([
-          ...kharchaEntries,
-          { tagName: "", kharchaName: "", payer: "", amount: 0 },
-        ]);
-      }
+      setErrorMessage("");
     }
+
+    const savedEvents = JSON.parse(localStorage.getItem("events") || "[]")
+
+    const newEvent = {
+      id: Date.now(),
+      eventName: eventName,
+      participants: participants,
+      date: selectedDate.format("DD-MM-YY"),
+    };
+
+    // Save data into local storage
+    localStorage.setItem("events", JSON.stringify([...savedEvents, newEvent]))
+    navigate(`/entries/${newEvent.id}`, {state: {event : newEvent}})
+    console.log("local storage data")
+    console.log(JSON.parse(localStorage.getItem("events")))
   }
 
-  //   function handleTagNameNormalize(index) {
-  //   const entry = kharchaEntries[index];
-  //   if (entry.tagName.trim() && !entry.tagName.startsWith("#")) {
-  //     const normalizedEntry = { ...entry, tagName: "#" + entry.tagName.trim() };
-  //     handleEntryChange(index, normalizedEntry);
-  //   }
-  //   }
-
-  function handleTagNameSanitize(index, e, field) {
-    const related = e.relatedTarget; // where focus is going
-    if (!related || !related.closest(".suggestion-group")) {
-      setTimeout(() => setIsSuggestionListVisible(false), 150);
-    }
-
-    const entry = kharchaEntries[index];
-    let normalizedEntry = { ...entry };
-
-    switch (field) {
-      case "tagName": {
-        let tag = entry.tagName.trim();
-        if (tag === "#") tag = "";
-        if (tag && !tag.startsWith("#")) tag = "#" + tag;
-        if (tag.length > 1) {
-          // capitalize first letter after #
-          tag = "#" + tag[1].toUpperCase() + tag.slice(2);
-        }
-        normalizedEntry.tagName = tag;
-        break;
-      }
-
-      case "kharchaName": {
-        let name = entry.kharchaName.trim();
-        if (name) {
-          name = name.charAt(0).toUpperCase() + name.slice(1);
-        }
-        normalizedEntry.kharchaName = name;
-        break;
-      }
-
-      case "payer": {
-        let payer = entry.payer.trim();
-        if (payer) {
-          payer = payer.charAt(0).toUpperCase() + payer.slice(1);
-        }
-        normalizedEntry.payer = payer;
-        break;
-      }
-
-      case "amount": {
-        let amt = Number(entry.amount);
-        if (isNaN(amt) || amt < 0) amt = 0;
-        // Round to integer (₹ doesn’t usually have decimals in casual kharcha tracking)
-        amt = Math.round(amt);
-
-        normalizedEntry.amount = amt;
-        break;
-      }
-
-      default:
-        break;
-    }
-
-    // Only update if something actually changed
-    if (JSON.stringify(normalizedEntry) !== JSON.stringify(entry)) {
-      handleEntryChange(index, normalizedEntry);
-    }
+  function resetAllEvents() {
+  if (confirm("Are you sure you want to delete all events?")) {
+    localStorage.removeItem("events");
+    alert("All events cleared!");
   }
+}
 
   return (
     <>
-      <div className="">
-        <div
-          id="container"
-          className="bg-gray-100 border-b border-gray-400 mt-3 mb-3 overflow-auto min-h-screen px-2 pb-10"
-          onClick={handleAddNewEntry}
+      <img
+        src={kharchaLogo}
+        className="object-cover h-30 w-35 mx-auto pb-4"
+        alt="my logo"
+      />
+      <header className="header text-3xl text-center font-kvittype text-red-500">
+        KHARCHA PAANI
+      </header>
+      {/* <span className="hr"></span> */}
+      <hr className="pt-1.5 decoration-gray-500 font-bold" />
+      <hr className="pt-1.5 decoration-gray-500 font-bold " />
+      <hr className="pt-1.5 decoration-gray-500 font-bold" />
+      <p className="tag-line text-center italic">
+        Split your kharcha among friends!
+      </p>
+      <Container
+        maxWidth="sm"
+        sx={{
+          mt: 3,
+          backgroundColor: "grey.100",
+          borderRadius: 2,
+          border: 1,
+          borderColor: "grey.400",
+        }}
+      >
+        {errorMessage && (
+          <Alert
+            icon={<CheckIcon fontSize="inherit" />}
+            severity="error"
+            sx={{ mt: 2 }}
+          >
+            {errorMessage}
+          </Alert>
+        )}
+        <Typography
+          component="h1"
+          variant="h5"
+          align="center"
+          gutterBottom
+          sx={{
+            pt: 2,
+            fontFamily: "Kvittype",
+            color: "grey.700",
+            backgroundColor: "red.500",
+            py: 1,
+            borderRadius: 1,
+          }}
         >
-          {kharchaEntries.length === 0 ? (
-            <div className="p-8 text-gray-600 flex items-center justify-center space-x-2">
-              <span className="text-3xl text-red-500 font-bold pb-1">+</span>
-              <span>Please click here to add new Kharcha</span>
-            </div>
-          ) : (
-            <div>
-              <div
-                id="entries"
-                className="grid grid-cols-2 max-sm:grid-cols-2 md:grid-cols-4 gap-4"
-              >
-                {kharchaEntries.map((entry, index) => (
-                  <KharchaEntry
-                    key={index}
-                    index={index}
-                    entry={entry}
-                    handleEntryChange={handleEntryChange}
-                    tabNewEntry={handleAddNewEntry}
-                    sectionMode={sectionMode}
-                    //   handleTagNameNormalize={handleTagNameNormalize}
-                    handleTagNameSanitize={handleTagNameSanitize}
-                    setIsSuggestionListVisible={setIsSuggestionListVisible}
-                    setFocusedEntryIndex={setFocusedEntryIndex}
-                    setSuggestionType={setSuggestionType}
-                  />
-                ))}
-              </div>
-              {showAddHint && (
-                <div className="AddNewEntryHint p-8 text-gray-600 flex items-center justify-center space-x-2">
-                  <span className="plus-sign text-3xl text-red-500 font-bold pb-1">
-                    +
-                  </span>
-                  <span>Click to add new entry</span>
-                </div>
+          Create New Event
+        </Typography>
+        <Divider />
+        <Box
+          component={"form"}
+          noValidate
+          sx={{ display: "flex", flexDirection: "column", gap: 2, p: 2 }}
+        >
+          <TextField
+            type="text"
+            name="eventName"
+            label="Event Name"
+            value={eventName}
+            onChange={handleEventName}
+            fullWidth
+            required
+            autoFocus
+            placeholder="e.g Goa Trip, Diwali Party, Coffee Hangout ... "
+            variant="standard"
+          />
+          {participants.map((participant, index) => (
+            <TextField
+              key={index}
+              type="text"
+              placeholder={"Enter participant name"}
+              error={touched.has(index) && participant.trim() === ""}
+              onBlur={() => {
+                setTouched((prev) => new Set(prev).add(index));
+              }}
+              name={`participant_${index + 1}`}
+              value={participant}
+              onChange={(event) => {
+                setParticipants((oldParticipants) => {
+                  let copy = [...oldParticipants];
+                  copy[index] = event.target.value;
+                  return copy;
+                });
+              }}
+              label={`Participant ${index + 1}`}
+              fullWidth
+              required
+              variant="standard"
+              helperText={
+                touched.has(index) && participant.trim() === ""
+                  ? "Enter participant name"
+                  : ""
+              }
+            />
+          ))}
+          {/* <TextField
+                type="text"
+                name="Participant1"
+                label="Participant 1"
+                fullWidth
+                required
+                variant="standard"
+                /> */}
+          <Button
+            fullWidth
+            variant="contained"
+            color="primary"
+            onClick={handleAddParticipant}
+            sx={{ mt: 2 }}
+          >
+            Add More Participants
+          </Button>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DatePicker
+              disableFuture
+              label="Event Date"
+              name="eventDate"
+              value={selectedDate}
+              onChange={(newDate) => setSelectedDate(newDate)}
+              format="DD-MM-YY"
+              renderInput={(params) => (
+                <TextField {...params} variant="standard" fullWidth />
               )}
-            </div>
-          )}
-        </div>
-
-        <div className="text-sm text-gray-500 italic pb-10 px-2">
-          * Click anywhere in the gray area to add a new entry
-        </div>
-      </div>
+            />
+          </LocalizationProvider>
+          <Button
+            fullWidth
+            variant="contained"
+            color="error"
+            component="label"
+            sx={{ mt: 2, mb: 2 }}
+            onClick={handleSubmit}
+          >
+            Create Event
+            <input type="submit" hidden />
+          </Button>
+          {process.env.NODE_ENV === "development" && (
+  <Button
+    type="button"
+    color="error" 
+    variant="outlined"
+    sx={{ mt: 2, mb: 2 }}
+    fullWidth
+    onClick={resetAllEvents}
+  >
+    🔄 Reset All Events (Dev)
+  </Button>
+)}
+        </Box>
+      </Container>
     </>
   );
 }
+
+//   <div
+//     id="container"
+//     className=" bg-gray-100 border-1 border-gray-400 mt-5 mb-3 overflow-auto mx-auto lg:w-150 md:w-100 px-2 pb-10 rounded-xl"
+//   >
+//     <span className="flex text-3xl border-b-2 p-3 text-black items-center border-gray-300 text-center font-kvittype">
+//       Create New Event
+//     </span>
+//     <Box sx={{ "& button": { m: 1 } }}>
+//       <form className="flex flex-col space-y-4 p-4">
+//         <div>
+//           <Input
+//             type="text"
+//             name="eventName"
+//             className="w-full px-4 py-2 focus:border-red-600 outline-0 focus:border-b-3 border-b-1 capitalize"
+//             placeholder="Event Name"
+//             pattern="[A-Za-z]+"
+//             autoComplete="off"
+//             required
+//           ></Input>
+//         </div>
+//         <div>
+//           <Input
+//             type="text"
+//             name="participants"
+//             className="w-full px-4 py-2 focus:border-red-600 outline-0 focus:border-b-3 border-b-1 capitalize"
+//             placeholder="Participants (comma separated)"
+//             pattern="[A-Za-z, ]+"
+//             autoComplete="off"
+//             required
+//           ></Input>
+//         </div>
+//         <div>
+//           <LocalizationProvider dateAdapter={AdapterDayjs}>
+//             <DatePicker />
+//           </LocalizationProvider>
+//         </div>
+//         <div>
+//           <Button fullWidth variant="contained" color="error" component="label">
+//             Create Event
+//             <input type="submit" hidden />
+//           </Button>
+//         </div>
+//       </form>
+//     </Box>
+//     <div className="text-center text-gray-500 italic">OR</div>
+//     <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300 mb-5">
+//       Join Existing Event
+//     </button>
+//   </div>
