@@ -15,6 +15,7 @@ export default function KharchaEntries({
 }) {
   const [kharchaEntries, setKharchaEntries] = useState([]);
   const [showAddHint, setShowAddHint] = useState(false);
+  const [validationMessage, setValidationMessage] = useState([]);
 
   function handleEntryChange(index, updatedEntry) {
     const updatedEntries = [...kharchaEntries];
@@ -27,7 +28,6 @@ export default function KharchaEntries({
     );
     setTotal(sum);
   }
-
 
   //   useEffect(() => {
   //     // Update options for suggestions
@@ -48,7 +48,6 @@ export default function KharchaEntries({
   //   }
   // });
   //   }, [kharchaEntries, setOptions]);
-
 
   function isValidTagName(tag) {
     const trimmed = tag.trim();
@@ -80,31 +79,33 @@ export default function KharchaEntries({
     }
   }
 
-  //   function handleTagNameNormalize(index) {
-  //   const entry = kharchaEntries[index];
-  //   if (entry.tagName.trim() && !entry.tagName.startsWith("#")) {
-  //     const normalizedEntry = { ...entry, tagName: "#" + entry.tagName.trim() };
-  //     handleEntryChange(index, normalizedEntry);
-  //   }
-  //   }
+  function handleDeleteEntry(index) {
+    if (!confirm("Delete this entry?")) return;
+    setKharchaEntries((prev) => prev.filter((_, i) => i !== index));
+  }
 
   const SUGGESTION_LIST_HIDE_DELAY_MS = 150;
 
   function handleTagNameSanitize(index, e, field) {
     const related = e.relatedTarget; // where focus is going
+    const updatedMessages = [...validationMessage];
     if (!related || !related.closest(".suggestion-group")) {
-      setTimeout(() => setIsSuggestionListVisible(false), SUGGESTION_LIST_HIDE_DELAY_MS);
+      setTimeout(
+        () => setIsSuggestionListVisible(false),
+        SUGGESTION_LIST_HIDE_DELAY_MS
+      );
     }
 
     const entry = kharchaEntries[index];
     let normalizedEntry = { ...entry };
-
+    updatedMessages[index] = {}; // Initialize to avoid undefined
+    setValidationMessage(updatedMessages);
     switch (field) {
       case "tagName": {
         let tag = entry.tagName.trim();
         if (tag === "#") tag = "";
-        if (tag && !tag.startsWith("#")) tag = "#" + tag;
-        if (tag.length > 1) {
+        if (tag) {
+          if (!tag.startsWith("#")) tag = "#" + tag;
           // capitalize first letter after #
           tag = "#" + tag[1].toUpperCase() + tag.slice(2);
         }
@@ -149,25 +150,30 @@ export default function KharchaEntries({
       handleEntryChange(index, normalizedEntry);
     }
   }
-    // When a suggestion is selected, update the relevant entry
-    useEffect(() => {
+  // When a suggestion is selected, update the relevant entry
+  useEffect(() => {
     if (!selectedSuggestion || selectedSuggestion.entryIndex === null) return;
 
     const { type, entryIndex, value } = selectedSuggestion;
+    const updatedMessages = [...validationMessage];
     setKharchaEntries((prev) => {
       if (!prev[entryIndex]) return prev;
       const updated = [...prev];
-      if (type === "tag")
+      if (type === "tag") {
         updated[entryIndex] = { ...updated[entryIndex], tagName: value };
-      if (type === "payer")
+        updatedMessages[entryIndex] = { [type]: "" };
+        setValidationMessage(updatedMessages);
+      } else if (type === "payer") {
         updated[entryIndex] = { ...updated[entryIndex], payer: value };
+        updatedMessages[entryIndex] = { [type]: "" };
+        setValidationMessage(updatedMessages);
+      }
       return updated;
     });
   }, [selectedSuggestion]);
 
-
-    // Show "Add new entry" hint only if all existing entries are valid
-    useEffect(() => {
+  // Show "Add new entry" hint only if all existing entries are valid
+  useEffect(() => {
     const allFilled =
       kharchaEntries.length > 0 &&
       kharchaEntries.every(
@@ -208,11 +214,6 @@ export default function KharchaEntries({
     );
 
     localStorage.setItem("events", JSON.stringify(updatedEvents));
-
-
-      console.log(
-    `✅ Auto-saved ${validEntries.length} entries for "${eventData.eventName}"`
-  );
   }, [kharchaEntries, eventData]);
 
   return (
@@ -221,7 +222,18 @@ export default function KharchaEntries({
         <div
           id="container"
           className="bg-gray-100 border-b border-gray-400 mt-3 mb-3 overflow-auto min-h-screen px-2 pb-10"
-          onClick={handleAddNewEntry}
+          onClick={(e) => {
+            // Click inside suggestion UI → ignore
+            if (
+              e.target.closest(".suggestion-group") ||
+              e.target.closest("#suggestion-container")
+            ) {
+              return;
+            }
+
+            // Otherwise → add new entry
+            handleAddNewEntry();
+          }}
         >
           {kharchaEntries.length === 0 ? (
             <div className="p-8 text-gray-600 flex items-center justify-center space-x-2">
@@ -232,7 +244,18 @@ export default function KharchaEntries({
             <div>
               <div
                 id="entries"
-                className="grid grid-cols-2 max-sm:grid-cols-2 md:grid-cols-4 gap-4"
+                onClick={(e) => {
+                if(sectionMode=="left") {
+                // Prevent click from propagating to container when in 'left' mode
+                e.stopPropagation()
+                }
+                }
+                } 
+                className={
+                  sectionMode == "left"
+                    ? "flex flex-col self-baseline"
+                    : "flex flex-wrap gap-4"
+                }
               >
                 {kharchaEntries.map((entry, index) => (
                   <KharchaEntry
@@ -240,13 +263,17 @@ export default function KharchaEntries({
                     index={index}
                     entry={entry}
                     handleEntryChange={handleEntryChange}
+                    handleDeleteEntry={handleDeleteEntry}
                     tabNewEntry={handleAddNewEntry}
                     sectionMode={sectionMode}
+                    validationMessage={validationMessage}
                     //   handleTagNameNormalize={handleTagNameNormalize}
                     handleTagNameSanitize={handleTagNameSanitize}
                     setIsSuggestionListVisible={setIsSuggestionListVisible}
                     setFocusedEntryIndex={setFocusedEntryIndex}
                     setSuggestionType={setSuggestionType}
+                    setValidationMessage={setValidationMessage}
+                    onDelete={handleDeleteEntry}
                   />
                 ))}
               </div>

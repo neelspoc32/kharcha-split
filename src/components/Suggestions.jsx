@@ -21,7 +21,7 @@ export default function Suggestions({
 
 
   return (
-    <div className=" flex flex-wrap justify-center gap-2 p-2 m-1  bg-white rounded shadow-md">
+    <div id="suggestion-container" className=" flex flex-wrap justify-center gap-2 p-2 m-1  bg-white rounded shadow-md">
       {suggestionsList.map((suggestion, index) => {
         return (
           <Suggestion
