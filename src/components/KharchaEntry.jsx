@@ -1,54 +1,83 @@
-import { Fragment } from "react";
-import { useState } from "react";
+import TextField from "@mui/material/TextField";
 import Section from "./Section";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 export default function KharchaEntry({
   entry,
   index,
   handleEntryChange,
   tabNewEntry,
   sectionMode,
+  validationMessage,
   handleTagNameSanitize,
   setIsSuggestionListVisible,
   setFocusedEntryIndex,
   setSuggestionType,
+  setValidationMessage,
+  onDelete,
 }) {
-  // function onChange(e) {
-  //   const { name, value } = e.target;
-  //   handleEntryChange(index, { ...entry, [name]: value });
-  // }
-  const [validationMessage, setValidationMessage] = useState({
-    kharchaName: "",
-    tagName: "",
-    payer: "",
-    amount: "",
-  });
+  const inputSx = {
+    width: "100%",
+    pb: 0,
+    mb: 0,
+    px: 1,
+    outline: "none",
+    textTransform: "capitalize", 
+    "&:focus-within": {
+      borderColor: "red.600",
+      borderBottomWidth: 3,
+    },
+  };
 
-  function onChange(e) {
+  const FIELD_RULES = {
+    tagName: {
+      sanitize: sanitizeTagName,
+      message: "Only letters are allowed after #",
+    },
+    kharchaName: {
+      sanitize: sanitizeLettersAndSpaces,
+      message: "Only letters and spaces are allowed",
+    },
+    payer: {
+      sanitize: sanitizeLettersAndSpaces,
+      message: "Only letters and spaces are allowed",
+    },
+  };
+
+  function sanitizeTagName(value) {
+    const hasHash = value.startsWith("#");
+    const lettersOnly = value.replace(/[^A-Za-z]/g, "");
+    return hasHash ? "#" + lettersOnly : lettersOnly;
+  }
+
+  function sanitizeLettersAndSpaces(value) {
+    return value.replace(/[^A-Za-z\s]/g, "");
+  }
+
+  function onChange(index, e) {
     const { name, value } = e.target;
-    let updatedValue = value;
-    updatedValue =
-    name === "tagName" && value.trim() && !value.startsWith("#")
-    ? "#" + value.trim()
-    : value;
-    let message = "";
-    const regex = /^[A-Za-z\s]*$/; // Only letters and spaces
 
-    if (name === "tagName" && value.trim() && !/(^#?[A-Za-z]*$)/.test(value)) {
-      updatedValue = value.slice(0, -1);
-      message = "Only letters and spaces are allowed after #";
-    } else if (name === "kharchaName" && value.trim() && !regex.test(value)) {
-      updatedValue = value.slice(0, -1);
-      message = "Only letters and spaces are allowed";
-    } else if (name === "payer" && value.trim() && !regex.test(value)) {
-      updatedValue = value.slice(0, -1);
-      message = "Only letters and spaces are allowed";
-    } else {
-      updatedValue = value;
-      message = "";
+    let updatedValue = value;
+    let message = "";
+
+    const rule = FIELD_RULES[name];
+
+    if (rule) {
+      const sanitized = rule.sanitize(value);
+
+      if (sanitized !== value) {
+        message = rule.message;
+      }
+
+      updatedValue = sanitized;
     }
 
-    setValidationMessage((prev) => ({ ...prev, [name]: message }));
-    console.log("updated entry from karchaentry");
+    const updatedMessages = [...validationMessage];
+    updatedMessages[index] = {
+      ...(updatedMessages[index] || {}),
+      [name]: message,
+    };
+
+    setValidationMessage(updatedMessages);
     handleEntryChange(index, { ...entry, [name]: updatedValue });
   }
 
@@ -56,6 +85,10 @@ export default function KharchaEntry({
     if (event.key == "Tab") {
       tabNewEntry();
     }
+  }
+
+  function handleSplitClick(index) {
+    console.log("Split clicked for entry:", index);
   }
 
   function setSuggestionPosition(tags, event) {
@@ -77,62 +110,64 @@ export default function KharchaEntry({
   }
 
   return (
-    <Section sectionMode={sectionMode}>
-      <div className="pt-4 suggestion-group entry">
-        <input
+    <Section
+      sectionMode={sectionMode}
+      onClick={() => setFocusedEntryIndex(index)}
+    >
+      <div className="pt-4 entry suggestion-group">
+        <TextField
           type="text"
           name="tagName"
-          className="w-full px-4 py-2 focus:border-red-600 outline-0 focus:border-b-3 border-b-1 capitalize"
+          variant="standard"
+          sx={inputSx}
           value={entry.tagName}
-          onChange={onChange}
+          onChange={(e) => onChange(index, e)}
           onFocus={(e) => {
             setSuggestionPosition("tagName", e);
             setSuggestionType("tags");
             setIsSuggestionListVisible(true);
             setFocusedEntryIndex(index);
           }}
-          onClick={(e) => e.stopPropagation()}
           onBlur={(e) => handleTagNameSanitize(index, e, "tagName")}
           placeholder="Tag Name"
           pattern="[A-Za-z#]+"
           autoComplete="off"
           required
-        ></input>
-        {validationMessage.tagName && (
+        ></TextField>
+        {validationMessage[index]?.tagName && (
           <p className="text-red-500 text-xs mt-1">
-            {validationMessage.tagName}
+            {validationMessage[index].tagName}
           </p>
         )}
       </div>
-
       <div className="pt-4 entry">
-        <input
+        <TextField
           type="text"
           name="kharchaName"
-          className="w-full px-4 py-2 focus:border-red-600 outline-0 focus:border-b-3 border-b-1 capitalize"
+          variant="standard"
+          sx={inputSx}
           value={entry.kharchaName}
-          onClick={(e) => e.stopPropagation()}
-          onChange={onChange}
+          onChange={(e) => onChange(index, e)}
           onBlur={(e) => handleTagNameSanitize(index, e, "kharchaName")}
           placeholder="Kharcha Name"
           pattern="[A-Za-z]+"
           autoComplete="off"
           required
-        ></input>
-        {validationMessage.kharchaName && (
+        ></TextField>
+        {validationMessage[index]?.kharchaName && (
           <p className="text-red-500 text-xs mt-1">
-            {validationMessage.kharchaName}
+            {validationMessage[index].kharchaName}
           </p>
         )}
       </div>
 
       <div className="pt-4 suggestion-group entry">
-        <input
+        <TextField
           type="text"
           name="payer"
-          className="w-full px-4 py-2 focus:border-red-600 outline-0 focus:border-b-3 border-b-1 capitalize"
+          sx={inputSx}
+          variant="standard"
           value={entry.payer}
-          onClick={(e) => e.stopPropagation()}
           onFocus={(e) => {
             setSuggestionPosition("payer", e);
             setSuggestionType("payers");
@@ -140,41 +175,60 @@ export default function KharchaEntry({
             setFocusedEntryIndex(index);
           }}
           onBlur={(e) => handleTagNameSanitize(index, e, "payer")}
-          onChange={onChange}
+          onChange={(e) => onChange(index, e)}
           placeholder="Paid By"
-          pattern="[A-Za-z]+"          
+          pattern="[A-Za-z]+"
           autoComplete="off"
           required
-        ></input>
-        {validationMessage.payer && (
-          <p className="text-red-500 text-xs mt-1">{validationMessage.payer}</p>
+        ></TextField>
+
+        {validationMessage[index]?.payer && (
+          <p className="text-red-500 text-xs mt-1">
+            {validationMessage[index].payer}
+          </p>
         )}
       </div>
-
-      <div className="pt-4 entry">
-        <input
+      <div className="pt-4 entry flex items-center">
+        <TextField
           type="number"
-          className="w-full px-4 py-2 focus:border-red-600 outline-0 focus:border-b-3 border-b-1 capitalize"
           name="amount"
+          sx={inputSx}
+          variant="standard"
           value={entry.amount}
-          onClick={(e) => e.stopPropagation()}
-          onChange={onChange}
+          onChange={(e) => onChange(index, e)}
           onBlur={(e) => handleTagNameSanitize(index, e, "amount")}
           onKeyDown={handleTabKey}
           placeholder="Amt"
           autoComplete="off"
           required
-        ></input>
-        {validationMessage.amount && (
+        ></TextField>
+        {validationMessage[index]?.amount && (
           <p className="text-red-500 text-xs mt-1">
-            {validationMessage.amount}
+            {validationMessage[index].amount}
           </p>
         )}
         {entry.amount > 0 && (
-          <span className="text-sm text-gray-500 ml-2">
+          <span className="absolute pl-25 text-sm text-gray-500 ml-2">
             ₹{entry.amount.toLocaleString("en-IN")}
           </span>
         )}
+      </div>
+      <div className="pt-4 max-sm:col-span-2 entry flex items-center overflow-visible justify-center">
+        <button
+          className="
+        text-red-500 hover:text-red-700 hover:bg-red-50
+        rounded-full p-1 focus:outline-none
+        transition-all duration-200
+        opacity-100 sm:opacity-0 sm:group-hover:opacity-100
+            "
+          aria-label="Delete entry"
+          onClick={() => {
+            onDelete(index);
+          }}
+          title="Delete Entry"
+        >
+          <DeleteOutlineIcon />
+        </button>
       </div>
     </Section>
   );
